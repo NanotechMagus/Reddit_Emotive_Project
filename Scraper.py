@@ -57,7 +57,8 @@ def main():
 
     start_logging()
 
-    red = core.RScraper
+    red = core.RScraper()
+    df = core.DataFrame()
     subdict = {}
     now = dt.datetime.now()
     logging.info(f"Starting pull at {now}")
@@ -75,14 +76,22 @@ def main():
             "body": [],
             "comments": [],
             "title_escore": [],
+            "body_escore": [],
             "comments_escore": []
         }
 
-        red.topic_scraper(subs, limit, subdict)
+        red.topic_scraper(subs, limit, subdict[subs])
 
-        logging.info(f"{subs} has fininshed polling.  Total time: {str(dt.datetime.now() - subnow)}")
+        print(f"{subs} has fininshed polling.  Total time: {str(dt.datetime.now() - subnow)}")
 
+        dataframe = df.framing(subdict[subs])
+        print(f"Dataframe created for {subs}")
+        df.csv_out(dataframe, subs)
+        print(f"Output complete!")
+
+    print("Writing subdict to disk")
     red.out_write(subdict)
+    print("Work complete")
 
     return 0
 
