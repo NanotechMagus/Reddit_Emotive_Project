@@ -43,7 +43,10 @@ class RScraper:
 
     def __checkme(self, checkme):
         if checkme:
-            return checkme
+            if isinstance(checkme, dt.datetime):
+                return checkme.isoformat()
+            else:
+                return checkme
         else:
             return ""
 
@@ -76,7 +79,8 @@ class RScraper:
 
     def comm_scraper(self, sid):
         from praw.models import MoreComments
-        comments = self.session.submission(id=sid).comments
+        subcom = self.session.submission(id=sid).comments
+        subcom.replace_more(limit=0)
         commforest = []
         commscore = {
             "trust": 0,
@@ -91,34 +95,13 @@ class RScraper:
             "surprise": 0
         }
         icount = 0
-        for comment in comments:
-            if isinstance(comment, MoreComments):
-                continue
+        for comment in subcom.list():
             if comment.body:
                 commforest.append(comment.body)
                 commscore = self.analyze.compare(comment.body, commscore)
                 icount += 1
         print(f"{icount} comments scraped!")
         return commforest, commscore
-
-    '''def comment_scraper(self, sid):
-        commforest = []
-        submission = self.session.submission(id=sid)
-        comments = submission.comments
-        for comment in comments:
-            self.__getSubComments(comment, commforest)
-        return commforest'''
-
-    '''def __getSubComments(self, comment, allComments):
-        allComments.append(comment)
-        if not hasattr(comment, "replies"):
-            replies = comment.comments()
-            print("(" + str(len(allComments)) + " comments fetched total)")
-        else:
-            replies = comment.replies
-        for child in replies:
-            self.__getSubComments(child, allComments)
-        return allComments'''
 
     def out_write(self, outdata, outloc=None):
         if not outloc:
@@ -127,7 +110,7 @@ class RScraper:
 
         try:
             with open(outloc, 'w') as outfile:
-                json.dump(outdata, outfile)
+                json.dump(outdata, outfile, indent=4, separators=(',', ': '))
             return True
         except Exception as err:
             print(f"Error in writing outfile: {err}")
@@ -152,14 +135,14 @@ class Analyzer:
             a, b, c = lines.split("\t")
             if not a in dataset.keys():
                 dataset[a] = {
-                    b: c.replace("\n", "")
+                    b: int(c.replace("\n", ""))
                 }
             else:
-                dataset[a][b] = c.replace("\n", "")
+                dataset[a][b] = int(c.replace("\n", ""))
         print("Dataset prepared.")
         return dataset
 
-    def compare(self, topic, totalemotion=None):
+    def compare(self, topic, totalemotion=""):
         if not totalemotion:
             totalemotion = {
                 "trust": 0,
@@ -173,28 +156,27 @@ class Analyzer:
                 "sadness": 0,
                 "surprise": 0
             }
-        topicstrip = self.textstrip(topic)
+        topicstrip = self.textstrip(list(topic.split(" ")))
         for x in topicstrip:
-            if x.lower() in self.__edataset.keys():
-                for y in self.__edataset[x.lower()].keys():
-                    if self.__edataset[x.lower()][y] == 1:
+            if x in self.__edataset.keys():
+                for y in self.__edataset[x].keys():
+                    if self.__edataset[x][y] == 1:
                         totalemotion[y] += 1
         return totalemotion
 
     def textstrip(self, topic):
         import string
         translator = str.maketrans({key: None for key in string.punctuation})
-        list_strip = [s.lower().translate(translator) for s in topic]
-        return [i for item in list_strip for i in item.split()]
+        return [s.lower().translate(translator) for s in topic]
 
 
 class DataFrame:
 
     def __init__(self, of=None):
         if not of:
-            self.__of=Path('.')
+            self.__of = Path('.')
         else:
-            self.__of=of
+            self.__of = of
 
     def framing(self, infile):
         import pandas as pd

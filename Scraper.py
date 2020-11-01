@@ -1,9 +1,7 @@
 #! python3.exe
 
-import praw
+
 import logging
-import json
-import pandas as pd
 import datetime as dt
 from core import core
 
@@ -49,7 +47,7 @@ sublist = [
     "MurderedByWords",
     "LeopardsAteMyFace"
 ]
-limit = 100
+limit = 1000
 
 
 def main():
@@ -101,7 +99,7 @@ def start_logging():
     handler.setLevel(logging.DEBUG)
     for logger_name in ("praw", "prawcore"):
         logger = logging.getLogger(logger_name)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.WARN)
         logger.addHandler(handler)
 
 
